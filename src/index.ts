@@ -84,7 +84,8 @@ yargs.command({
     describe: 'Import all configuration from a directory to Kibana.',
     builder: stdOpts,
     handler: async (argv: CommandArguments) => {
-        await importAll(extractConfig(argv))
+        const items = await importAll(extractConfig(argv))
+        console.log(chalk.green(`Successfully imported ${chalk.bold(items.toString())} objects`))
     }
 });
 yargs.command({
@@ -92,7 +93,8 @@ yargs.command({
     describe: 'Export all configuration from Kibana to a directory.',
     builder: stdOpts,
     handler: async (argv: CommandArguments) => {
-        await exportAll(extractConfig(argv))
+        const items = await exportAll(extractConfig(argv))
+        console.log(chalk.green(`Successfully exported ${chalk.bold(items.toString())} objects`))
     },
 });
 yargs.command({

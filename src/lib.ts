@@ -83,7 +83,7 @@ function cleanExportableItem({updated_at, version, ...props}) {
  *
  * @param config
  */
-export async function exportAll(config: Config) {
+export async function exportAll(config: Config): Promise<number> {
     const stuff = await getExportableItems(config);
 
     // Clean up first, as long as we have a clear export.
@@ -92,10 +92,11 @@ export async function exportAll(config: Config) {
     })
 
     // Finally, write the files.
-    return Bluebird.map(stuff, async function(exp) {
+    await Bluebird.map(stuff, async function(exp) {
         const dir = `${config.directory}/${exp.type}`
         return fse.outputJSON(`${dir}/${exp.id}.json`, exp, {spaces: 4})
     });
+    return stuff.length;
 }
 
 /**
@@ -103,7 +104,7 @@ export async function exportAll(config: Config) {
  *
  * @param config
  */
-export async function importAll(config: Config) {
+export async function importAll(config: Config): Promise<number> {
     const stuff = await getExportedItems(config)
         // Strip off the updated_at property, which causes Kibana to choke on import.
         .then(objects => objects.map(cleanExportableItem))
