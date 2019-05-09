@@ -2,7 +2,7 @@
   "name": "@lastcall/kibana-code-deployer",
   "version": "0.0.1",
   "description": "CLI tool assisting code-based deployments to Kibana",
-  "main": "src/index.js",
+  "main": "dist/index.js",
   "bin": "bin/kcd",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -27,5 +27,11 @@
     "fs-extra": "^7.0.1",
     "node-fetch": "^2.5.0",
     "yargs": "^13.2.2"
+  },
+  "devDependencies": {
+    "@types/node-fetch": "^2.3.3",
+    "@types/yargs": "^13.0.0",
+    "ts-node": "^8.1.0",
+    "typescript": "^3.4.5"
   }
 }
