@@ -115,7 +115,13 @@ export async function importAll(config: Config) {
     }).then(res => res.json());
     // Verify the response is ok.
     if(response.error) {
-        throw new Error(response.message);
+        throw new Error(`There was a problem during the import:\n${response.message}`);
+    }
+    // Verify none of the items had import errors.
+    const errorItems = response.saved_objects.filter(obj => obj.hasOwnProperty('error'));
+    if(errorItems.length) {
+        const errStrings = errorItems.map(item => `${item.type}:${item.id}: ${item.error.message}`)
+        throw new Error('There was a problem during the import:\n' + errStrings.join('\n'))
     }
     return stuff.length;
 }
