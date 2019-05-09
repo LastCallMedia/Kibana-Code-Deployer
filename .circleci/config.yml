@@ -1,0 +1,38 @@
+version: 2.1
+
+jobs:
+  test:
+    docker:
+      - image: "node:8"
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - run: npm ci
+      - run: npm run build
+
+  publish:
+    docker:
+      - image: "node:8"
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - run: npm ci
+      - run: npm run build
+      - run: echo "//registry.npmjs.org/:_authToken=$NPM_PUBLISH_TOKEN" >> ~/.npmrc
+      - run: npm version --no-git-tag-version $CIRCLE_TAG
+      - run: npm publish
+
+workflows:
+  version: 2
+  test:
+    jobs:
+      - test
+  publish:
+    jobs:
+      - publish:
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore: /.*/
+          context: org-global
