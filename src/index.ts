@@ -95,7 +95,7 @@ yargs.command({
     handler: async (argv: CommandArguments) => {
         const items = await exportAll(extractConfig(argv))
         console.log(chalk.green(`Successfully exported ${chalk.bold(items.toString())} objects`))
-    },
+    }
 });
 yargs.command({
     command: 'compare',

@@ -29,7 +29,7 @@ function kibana(config: Config, path: string, init: RequestInit = {}) {
     const finalInit = cloneDeep(init)
     finalInit.headers = Object.assign({}, finalInit.headers || {}, config.kibana.headers)
     finalInit.headers['kbn-xsrf'] = 'kibana'
-    return fetch(`${config.kibana.url}${path}`, finalInit)
+    return fetch(`${config.kibana.url}${path}`, finalInit).then(r => r.json())
 }
 
 /**
@@ -40,9 +40,7 @@ function kibana(config: Config, path: string, init: RequestInit = {}) {
 function getExportableItems(config: Config) {
     return Bluebird.map(config.types, async (type) => {
         return kibana(config, `/api/saved_objects/_find?type=${type}`)
-            .then(response => response.json())
-            .then(response => response.saved_objects)
-            .then(items => items.map(cleanExportableItem))
+            .then(response => response.saved_objects.map(cleanExportableItem))
     }).then(flatten);
 }
 
@@ -113,7 +111,7 @@ export async function importAll(config: Config): Promise<number> {
     const response = await kibana(config, `/api/saved_objects/_bulk_create?overwrite=true`, {
         method: 'POST',
         body: JSON.stringify(stuff)
-    }).then(res => res.json());
+    });
     // Verify the response is ok.
     if(response.error) {
         throw new Error(`There was a problem during the import:\n${response.message}`);
