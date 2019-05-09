@@ -39,8 +39,16 @@ function kibana(config: Config, path: string, init: RequestInit = {}) {
  */
 function getExportableItems(config: Config) {
     return Bluebird.map(config.types, async (type) => {
-        return kibana(config, `/api/saved_objects/_find?type=${type}`)
-            .then(response => response.saved_objects.map(cleanExportableItem))
+        const fetchPage = (page) => kibana(config, `/api/saved_objects/_find?type=${type}&page=${page}`)
+            .then(async (response) => {
+                let thoseResults = []
+                if(parseInt(response.per_page) * parseInt(response.page) < parseInt(response.total)) {
+                    thoseResults = await fetchPage(parseInt(response.page) + 1);
+                }
+                return response.saved_objects.map(cleanExportableItem).concat(thoseResults)
+            });
+
+        return fetchPage(1)
     }).then(flatten);
 }
 
