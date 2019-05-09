@@ -1,24 +1,56 @@
 
 import * as Bluebird from 'bluebird'
-import fetch from 'node-fetch'
+import fetch, {RequestInit} from 'node-fetch'
 import * as fse from 'fs-extra'
-import {differenceBy, differenceWith, isEqual, intersectionBy, intersectionWith, flatten} from 'lodash'
+import {differenceBy,
+    differenceWith,
+    isEqual,
+    intersectionBy,
+    intersectionWith,
+    flatten,
+    cloneDeep
+} from 'lodash'
 
 export interface Config {
-    kibana: {url: string}
+    kibana: {
+        url: string,
+        headers?: {
+            [key: string]: string
+        }
+    }
     directory: string
     types: Array<string>
 }
 
+/**
+ * Executes a fetch against Kibana.
+ */
+function kibana(config: Config, path: string, init: RequestInit = {}) {
+    const finalInit = cloneDeep(init)
+    finalInit.headers = Object.assign({}, finalInit.headers || {}, config.kibana.headers)
+    finalInit.headers['kbn-xsrf'] = 'kibana'
+    return fetch(`${config.kibana.url}${path}`, finalInit)
+}
+
+/**
+ * Lists all exportable items of the configured types currently in Kibana.
+ *
+ * @param config
+ */
 function getExportableItems(config: Config) {
     return Bluebird.map(config.types, async (type) => {
-        return fetch(`${config.kibana.url}/api/saved_objects/_find?type=${type}`)
+        return kibana(config, `/api/saved_objects/_find?type=${type}`)
             .then(response => response.json())
             .then(response => response.saved_objects)
             .then(items => items.map(cleanExportableItem))
     }).then(flatten);
 }
 
+/**
+ * Gets all of the locally exported items.
+ *
+ * @param config
+ */
 function getExportedItems(config: Config) {
     return Bluebird.map(config.types, async (type) => {
         const dir = `${config.directory}/${type}`
@@ -46,6 +78,11 @@ function cleanExportableItem({updated_at, version, ...props}) {
     return props
 }
 
+/**
+ * Exports all of Kibanas saved objects to local storage.
+ *
+ * @param config
+ */
 export async function exportAll(config: Config) {
     const stuff = await getExportableItems(config);
 
@@ -61,18 +98,20 @@ export async function exportAll(config: Config) {
     });
 }
 
+/**
+ * Imports all of the locally saved objects to Kibana.
+ *
+ * @param config
+ */
 export async function importAll(config: Config) {
     const stuff = await getExportedItems(config)
         // Strip off the updated_at property, which causes Kibana to choke on import.
         .then(objects => objects.map(cleanExportableItem))
 
     // Send off all the imports to the bulk create endpoint.
-    const response = await fetch(`${config.kibana.url}/api/saved_objects/_bulk_create?overwrite=true`, {
+    const response = await kibana(config, `/api/saved_objects/_bulk_create?overwrite=true`, {
         method: 'POST',
-        body: JSON.stringify(stuff),
-        headers: {
-            'kbn-xsrf': 'letmein'
-        }
+        body: JSON.stringify(stuff)
     }).then(res => res.json());
     // Verify the response is ok.
     if(response.error) {

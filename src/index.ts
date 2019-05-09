@@ -27,6 +27,7 @@ const stdOpts: yargs.CommandBuilder = {
         alias: 'config',
         description: 'Path to a configuration file',
         config: true,
+        default: 'kcd.json'
     },
     k: {
         alias: 'kibana.url',
@@ -70,7 +71,8 @@ function extractConfig(argv: any): Config {
     }
     return {
         kibana: {
-            url: argv.kibana.url
+            url: argv.kibana.url,
+            headers: argv.kibana.headers || {}
         },
         directory: argv.directory,
         types: argv.types
