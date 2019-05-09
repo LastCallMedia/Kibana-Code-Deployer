@@ -2,8 +2,7 @@
 import * as Bluebird from 'bluebird'
 import fetch from 'node-fetch'
 import * as fse from 'fs-extra'
-import diff from 'diff'
-import {flatten} from './util'
+import {differenceBy, differenceWith, isEqual, intersectionBy, intersectionWith, flatten} from 'lodash'
 
 export interface Config {
     kibana: {url: string}
@@ -82,34 +81,52 @@ export async function importAll(config: Config) {
     return stuff.length;
 }
 
-export async function listChanges(config: Config) {
+interface VizItem {
+    id: string
+    type: string,
+    attributes: {title: string, [key: string]: any}
+    [key: string]: any
+}
+export interface StatusItem {
+    key: string,
+    status: string,
+    title: string,
+    type: string
+}
+
+export async function listChanges(config: Config): Promise<Array<StatusItem>> {
     const exportable = await getExportableItems(config)
     const exported = await getExportedItems(config)
 
-    function hashArr(items) {
-        return items.reduce((collected, item) => {
-            collected.set(`${item.type}:${item.id}`, item)
-            return collected
-        }, new Map())
+    // Callback to determine the canonical key for a saved object.
+    const ident = (item: VizItem): string => `${item.type}:${item.id}`
+    // Callback to convert an VizItem item to a status item.
+    const createConverter = (status) => {
+        return (item: VizItem): StatusItem => {
+            if(!item.attributes.title) {
+                console.log(item);
+            }
+            return {key: ident(item), status, type: item.type, title: item.attributes.title}
+        };
     }
-    const exportableIds = hashArr(exportable)
-    const exportedIds = hashArr(exported)
-    const changes = {added: [], removed: [], changed: []}
-    exportableIds.forEach((value, key) => {
-        if(!exportedIds.has(key)) {
-            changes.removed.push(key);
-            return;
-        }
-        const diffs = diff.diffJson(value, exportedIds.get(key))
-        const actualChange = diffs.filter(d => d.added || d.removed);
-        if(actualChange.length > 0) {
-            changes.changed.push(key);
-        }
-    });
-    exportedIds.forEach((v, key) => {
-        if(!exportableIds.has(key)) {
-            changes.added.push(key);
-        }
-    })
-    return changes
+
+    // First calculate newly added items.
+    const added = differenceBy(exportable, exported, ident)
+    // Then, calculate removed items.
+    const removed = differenceBy(exported, exportable, ident);
+
+    // Calculate what has changed by finding items that exist
+    // in both sets, then diffing them.
+    const exportableSameObj = intersectionBy(exportable, exported, ident);
+    const exportedSameObj = intersectionBy(exported, exportable, ident)
+    const changed = differenceWith(exportableSameObj, exportedSameObj, isEqual)
+    // Finally, calculate what hasn't changed.
+    const same = intersectionWith(exportableSameObj, exportedSameObj, isEqual)
+
+    return [].concat(
+        same.map(createConverter('unchanged')),
+        added.map(createConverter('added')),
+        removed.map(createConverter('removed')),
+        changed.map(createConverter('changed')),
+    )
 }
