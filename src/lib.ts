@@ -42,9 +42,12 @@ function getExportableItems(config: Config) {
         const fetchPage = (page) => kibana(config, `/api/saved_objects/_find?type=${type}&page=${page}`)
             .then(async (response) => {
                 let thoseResults = []
+
+                // See if we should continue to the next page.
                 if(parseInt(response.per_page) * parseInt(response.page) < parseInt(response.total)) {
                     thoseResults = await fetchPage(parseInt(response.page) + 1);
                 }
+
                 return response.saved_objects.map(cleanExportableItem).concat(thoseResults)
             });
 
@@ -155,9 +158,6 @@ export async function listChanges(config: Config): Promise<Array<StatusItem>> {
     // Callback to convert an VizItem item to a status item.
     const createConverter = (status) => {
         return (item: VizItem): StatusItem => {
-            if(!item.attributes.title) {
-                console.log(item);
-            }
             return {key: ident(item), status, type: item.type, title: item.attributes.title}
         };
     }

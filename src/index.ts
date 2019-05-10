@@ -35,6 +35,11 @@ const stdOpts: yargs.CommandBuilder = {
         describe: 'The URL to the Kibana instance',
         type: 'string'
     },
+    h: {
+        alias: 'kibana.headers.host',
+        describe: 'Host header override when making requests to Kibana',
+        type: 'string'
+    },
     d: {
         alias: 'directory',
         demandOption: true,

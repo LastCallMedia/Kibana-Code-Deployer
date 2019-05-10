@@ -10,7 +10,7 @@ You can install this project using a simple command:
 npm i @lastcall/kibana-code-deployer
 ```
 
-Once you have it installed, create a configuration file in your project root.  The config file will contain information about your Kibana installation, as well as a local directory that will be used to store exported objects.
+Once you have it installed, create a configuration file in your project root (`kcd.json`).  The config file will contain information about your Kibana installation, as well as a local directory that will be used to store exported objects.
 ```json
 # kcd.json
 {
