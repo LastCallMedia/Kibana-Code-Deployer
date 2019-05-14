@@ -1,0 +1,9 @@
+{
+  "kibana": {
+    "url": "foo",
+    "headers": {
+      "host": "bar"
+    }
+  },
+  "directory": "./foo"
+}

@@ -10,22 +10,12 @@ import {differenceBy,
     flatten,
     cloneDeep
 } from 'lodash'
-
-export interface Config {
-    kibana: {
-        url: string,
-        headers?: {
-            [key: string]: string
-        }
-    }
-    directory: string
-    types: Array<string>
-}
+import {Configuration} from './config'
 
 /**
  * Executes a fetch against Kibana.
  */
-function kibana(config: Config, path: string, init: RequestInit = {}) {
+function kibana(config: Configuration, path: string, init: RequestInit = {}) {
     const finalInit = cloneDeep(init)
     finalInit.headers = Object.assign({}, finalInit.headers || {}, config.kibana.headers)
     finalInit.headers['kbn-xsrf'] = 'kibana'
@@ -37,7 +27,7 @@ function kibana(config: Config, path: string, init: RequestInit = {}) {
  *
  * @param config
  */
-function getExportableItems(config: Config) {
+function getExportableItems(config: Configuration) {
     return Bluebird.map(config.types, async (type) => {
         const fetchPage = (page) => kibana(config, `/api/saved_objects/_find?type=${type}&page=${page}`)
             .then(async (response) => {
@@ -60,7 +50,7 @@ function getExportableItems(config: Config) {
  *
  * @param config
  */
-function getExportedItems(config: Config) {
+function getExportedItems(config: Configuration) {
     return Bluebird.map(config.types, async (type) => {
         const dir = `${config.directory}/${type}`
         if(!await fse.exists(dir)) {
@@ -92,7 +82,7 @@ function cleanExportableItem({updated_at, version, ...props}) {
  *
  * @param config
  */
-export async function exportAll(config: Config): Promise<number> {
+export async function exportAll(config: Configuration): Promise<number> {
     const stuff = await getExportableItems(config);
 
     // Clean up first, as long as we have a clear export.
@@ -113,7 +103,7 @@ export async function exportAll(config: Config): Promise<number> {
  *
  * @param config
  */
-export async function importAll(config: Config): Promise<number> {
+export async function importAll(config: Configuration): Promise<number> {
     const stuff = await getExportedItems(config)
         // Strip off the updated_at property, which causes Kibana to choke on import.
         .then(objects => objects.map(cleanExportableItem))
@@ -149,7 +139,7 @@ export interface StatusItem {
     type: string
 }
 
-export async function listChanges(config: Config): Promise<Array<StatusItem>> {
+export async function listChanges(config: Configuration): Promise<Array<StatusItem>> {
     const exportable = await getExportableItems(config)
     const exported = await getExportedItems(config)
 

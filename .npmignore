@@ -1,4 +1,6 @@
 src/*
 tsconfig.json
+babel.config.js
+tests/*
 .circleci/*
 .idea

@@ -1,0 +1,32 @@
+{
+  "title": "Configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "kibana": {
+      "description": "Kibana Configuration object",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["url"],
+      "properties": {
+        "url": {
+          "type": "string"
+        },
+        "headers": {
+          "type": "object"
+        }
+      }
+    },
+    "directory": {
+      "type": "string"
+    },
+    "types": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["visualization", "dashboard", "index-pattern", "search", "timelion-sheet"]
+      }
+    }
+  },
+  "required": ["directory", "kibana", "types"]
+}
