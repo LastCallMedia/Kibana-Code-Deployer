@@ -11,15 +11,6 @@ import {cloneDeep} from 'lodash'
 
 const schema = require('./config.schema');
 
-// Types of things we'll consider exporting:
-export const ExportableTypeMap = {
-    visualization: 'Visualization',
-    dashboard: 'Dashboard',
-    'index-pattern': 'Index Pattern',
-    search: 'Saved Search',
-    'timelion-sheet': 'Timelion Sheet',
-}
-
 const decorations = {
     changed: {color: chalk.blue, prefix: '+-'},
     added: {color: chalk.green, prefix: '++'},

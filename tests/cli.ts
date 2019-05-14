@@ -1,6 +1,6 @@
 
 // import * as lib from '../src/lib'
-import app, {ExportableTypeMap} from '../src/cli'
+import app from '../src/cli'
 import * as lib from '../src/lib';
 import * as path from 'path'
 
@@ -21,8 +21,8 @@ describe('CLI Option Parsing', function() {
         const parsed = app.parse('');
         expect(parsed).toMatchObject({
             config: 'kcd.json',
-            types: Object.keys(ExportableTypeMap),
         })
+        expect(parsed).toHaveProperty('types')
     });
     it('Sets configuration values based on config', function() {
         const parsed = app.parse(`--config ${config}`)
