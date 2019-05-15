@@ -6,7 +6,7 @@ import {readFileSync, existsSync} from "fs";
 import Kibana from "./sources/Kibana";
 import Directory from "./sources/Directory";
 import SyncManager from './SyncManager'
-import {DiffResult, validate} from "./types";
+import {DiffResult, Exportable, validate} from "./types";
 
 const decorations = {
     changed: {color: chalk.blue, prefix: '+-'},
@@ -72,29 +72,40 @@ yargs.options(stdOpts);
 yargs.command({
     command: 'import-all',
     describe: 'Import all configuration from a directory to Kibana.',
-    // builder: stdOpts,
-    handler: async (argv: yargs.Arguments) => {
+    builder: {
+        'r': {
+            alias: 'cleanup',
+            describe: 'Cleanup objects that do not exist in the export directory?',
+            type: 'boolean',
+            default: false
+        }
+    },
+    handler: async (argv: yargs.Arguments & {cleanup: boolean}) => {
         if(!validate(argv)) return;
         const kibana = new Kibana(argv.kibana)
         const directory = new Directory(argv.directory)
         const manager = new SyncManager(argv.types)
 
-        const items = await manager.sync(directory, kibana)
-        console.log(chalk.green(`Successfully imported ${chalk.bold(items.toString())} objects`))
+        const items = await manager.sync(directory, kibana, argv.cleanup)
+        if(argv.cleanup) {
+            console.log(chalk.green(`Import complete. ${chalk.bold(items.changed.length.toString())} changed, ${chalk.bold(items.added.length.toString())} added, and ${chalk.bold(items.removed.length.toString())} removed.`))
+        }
+        else {
+            console.log(chalk.green(`Import complete. ${chalk.bold(items.changed.length.toString())} changed, ${chalk.bold(items.added.length.toString())} added`))
+        }
     }
 });
 yargs.command({
     command: 'export-all',
     describe: 'Export all configuration from Kibana to a directory.',
-    // builder: stdOpts,
     handler: async (argv: yargs.Arguments) => {
         if(!validate(argv)) return;
         const kibana = new Kibana(argv.kibana)
         const directory = new Directory(argv.directory)
         const manager = new SyncManager(argv.types)
 
-        const items = await manager.sync(kibana, directory)
-        console.log(chalk.green(`Successfully exported ${chalk.bold(items.toString())} objects`))
+        const items = await manager.sync(kibana, directory, true)
+        console.log(chalk.green(`Export complete. ${chalk.bold(items.changed.length.toString())} changed, ${chalk.bold(items.added.length.toString())} added, and ${chalk.bold(items.removed.length.toString())} removed.`))
     }
 });
 yargs.command({
@@ -109,16 +120,20 @@ yargs.command({
 
         const differences = await manager.diff(directory, kibana)
 
-        let hasChanges = differences.filter(i => i.status !== 'unchanged').length > 0;
-        if(hasChanges) {
+        let changes = (differences.changed.length + differences.added.length + differences.removed.length)
+
+        if(changes > 0) {
             console.log('Difference between Kibana and export directory:');
-            const format = (item: DiffResult) => {
-                const decoration = decorations[item.status]
-                return decoration.color(`${decoration.prefix} ${labelType(item.type)}: ${item.title}`)
+            const format = (item: Exportable, status) => {
+                const decoration = decorations[status]
+                const title = item.attributes.title || item.id
+                return decoration.color(`${decoration.prefix} ${labelType(item.type)}: ${title}`)
             }
-            differences.forEach(difference => {
-                console.log(format(difference))
-            })
+            differences.unchanged.forEach(diff => console.log(format(diff, 'unchanged')))
+            differences.changed.forEach(diff => console.log(format(diff, 'changed')))
+            differences.added.forEach(diff => console.log(format(diff, 'added')))
+            differences.removed.forEach(diff => console.log(format(diff, 'removed')))
+
             // Exit non-0 if we detect changes.
             process.exit(1)
         }

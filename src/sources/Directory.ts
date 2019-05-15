@@ -15,7 +15,7 @@ export default class Directory implements Syncable {
      */
     async import(items: Array<Exportable>) {
         // Clean up previous syncs before we import.
-        await fse.emptyDir(`${this.dir}`)
+        // await fse.emptyDir(`${this.dir}`)
 
         // Write the export files to the directory.
         await Bluebird.map(items, async (item) => {
@@ -44,5 +44,12 @@ export default class Directory implements Syncable {
                 // Read the JSON from the files.
                 .then(files => Bluebird.map(files, f => fse.readJSON(f)))
         }) .then(flatten)
+    }
+
+    remove(items: Array<Exportable>): Promise<number> {
+        return Bluebird.map(items, item => {
+            const filename = `${this.dir}/${item.type}/${item.id}.json`
+            return fse.unlink(filename)
+        })
     }
 }

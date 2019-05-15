@@ -8,42 +8,71 @@ export default class SyncManager {
     constructor(types: SyncType[]) {
         this.types = types
     }
-    async sync(from: Syncable, to: Syncable): Promise<number> {
-        const items = await from.export(this.types)
-        return to.import(items.map(cleanExportableItem))
-    }
-    async diff(from: Syncable, to: Syncable): Promise<Array<DiffResult>> {
-        const fromItems = await from.export(this.types).then(i => i.map(cleanExportableItem))
-        const toItems = await to.export(this.types).then(i => i.map(cleanExportableItem))
 
-        // Callback to determine the canonical key for a saved object.
-        const ident = (item: Exportable): string => `${item.type}:${item.id}`
-        // Callback to convert an VizItem item to a status item.
-        const createConverter = (status) => {
-            return (item: Exportable): DiffResult => {
-                return {key: ident(item), status, type: item.type, title: item.attributes.title}
-            };
+    /**
+     * Sync the exports between two sources.
+     *
+     * @param from
+     * @param to
+     * @param cleanup
+     */
+    async sync(from: Syncable, to: Syncable, cleanup: boolean = true): Promise<DiffResult> {
+        const items = await this.diff(from, to)
+
+        const toImport = [...items.added, ...items.changed]
+        const toRemove = items.removed
+
+        if(toImport.length > 0) {
+            await to.import(toImport)
         }
 
-        // First calculate newly added items.
-        const added = differenceBy(fromItems, toItems, ident)
-        // Then, calculate removed items.
-        const removed = differenceBy(toItems, fromItems, ident);
+        if(cleanup) {
+            await to.remove(toRemove)
+        }
+        return items
+    }
 
-        // Calculate what has changed by finding items that exist
-        // in both sets, then diffing them.
-        const exportableSameObj = intersectionBy(fromItems, toItems, ident);
-        const exportedSameObj = intersectionBy(toItems, fromItems, ident)
-        const changed = differenceWith(exportableSameObj, exportedSameObj, isEqual)
-        // Finally, calculate what hasn't changed.
-        const same = intersectionWith(exportableSameObj, exportedSameObj, isEqual)
+    /**
+     * Compare the exports from two sources.
+     *
+     * @param from
+     * @param to
+     */
+    async diff(from: Syncable, to: Syncable): Promise<DiffResult> {
+        const fromItems = await from.export(this.types).then(i => i.map(cleanExportableItem))
+        const toItems = await to.export(this.types).then(i => i.map(cleanExportableItem))
+        return diff(fromItems, toItems)
+    }
+}
 
-        return [].concat(
-            same.map(createConverter('unchanged')),
-            added.map(createConverter('added')),
-            removed.map(createConverter('removed')),
-            changed.map(createConverter('changed')),
-        )
+
+/**
+ * Compares two arrays of exportable items, and groups them into categories
+ * based on whether they've changed.
+ *
+ * @param fromItems
+ * @param toItems
+ */
+export function diff(fromItems: Array<Exportable>, toItems: Array<Exportable>): DiffResult {
+    // Callback to determine the canonical key for a saved object.
+    const ident = (item: Exportable): string => `${item.type}:${item.id}`
+
+    // First calculate newly added items.
+    const added = differenceBy(fromItems, toItems, ident)
+    // Then, calculate removed items.
+    const removed = differenceBy(toItems, fromItems, ident);
+
+    // Then, calculate unchanged items.
+    const unchanged = intersectionWith(fromItems, toItems, isEqual)
+
+    // Changed items are anything that's not in the previous sets.
+    const changed = differenceBy(fromItems, [...added, ...removed, ...unchanged], ident)
+
+    return {
+        unchanged,
+        added,
+        removed,
+        changed
     }
 }
 

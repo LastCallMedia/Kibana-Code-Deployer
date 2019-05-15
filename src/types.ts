@@ -41,11 +41,12 @@ export interface Exportable {
 export interface Syncable {
     import(items: Array<Exportable>): Promise<number>
     export(types: SyncTypeList): Promise<Array<Exportable>>
+    remove(items: Array<Exportable>): Promise<number>
 }
 
 export interface DiffResult {
-    key: string
-    type: string
-    title: string
-    status: string
+    unchanged: Array<Exportable>
+    changed: Array<Exportable>
+    added: Array<Exportable>
+    removed: Array<Exportable>
 }

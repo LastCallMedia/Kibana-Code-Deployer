@@ -44,6 +44,15 @@ export default class Kibana implements Syncable{
         }
         return response.saved_objects.length;
     }
+    async remove(items: Array<Exportable>): Promise<number> {
+        return Bluebird.map(items, item => {
+            return this.fetch(`/api/saved_objects/${item.type}/${item.id}`, {
+                method: 'DELETE'
+            })
+        }).then(results => {
+            return results.length
+        })
+    }
     fetch(path, init: RequestInit = {}) {
         const finalInit = cloneDeep(init)
         finalInit.headers = Object.assign({}, finalInit.headers || {}, this.config.headers)
