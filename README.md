@@ -26,12 +26,12 @@ Now you're ready to rock!  To see what would be exported by KCD, run the followi
 node_modules/.bin/kcd compare
 ```
 
-To export those objects, run:
+To export those objects from you Kibana instance to your local directory, run:
 ```bash
 node_modules/.bin/kcd export-all
 ```
 
-To import those same objects, run:
+To import those same objects from your local directory to your Kibana instance, run:
 ```bash
 node_modules/.bin/kcd import-all
 ```
