@@ -8,8 +8,6 @@ import Directory from "./sources/Directory";
 import SyncManager from './SyncManager'
 import {DiffResult, validate} from "./types";
 
-const schema = require('./config.schema');
-
 const decorations = {
     changed: {color: chalk.blue, prefix: '+-'},
     added: {color: chalk.green, prefix: '++'},
@@ -65,7 +63,7 @@ const stdOpts: yargs.CommandBuilder = {
         alias: 'types',
         type: 'array',
         description: 'Types to consider for export',
-        default: schema.properties.types.items.enum
+        default: ["visualization", "dashboard", "index-pattern", "search", "timelion-sheet"]
     }
 }
 
