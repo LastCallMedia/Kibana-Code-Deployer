@@ -1,10 +1,6 @@
 
-// import * as lib from '../src/lib'
 import app from '../src/cli'
-import * as lib from '../src/lib';
 import * as path from 'path'
-
-jest.mock('../src/lib');
 
 
 // Override the failure handler so it doesn't exit.
@@ -66,4 +62,5 @@ describe('CLI Option Parsing', function() {
             directory: path.relative(process.cwd(), path.resolve(__dirname, 'foo'))
         })
     })
-})
+});
+
