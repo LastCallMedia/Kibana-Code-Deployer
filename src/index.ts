@@ -2,5 +2,6 @@
 
 import app from './cli'
 
-app.demandCommand()
+app.strict();
+app.demandCommand();
 app.parse(process.argv.slice(2));
