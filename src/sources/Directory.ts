@@ -83,7 +83,10 @@ function uglify(item: Exportable) {
     const exported = cloneDeep(item)
     switch(item.type) {
         case 'index-pattern':
-            exported.attributes.fields = JSON.stringify(item.attributes.fields)
+            // Guard against fields not being an object yet.
+            if(typeof exported.attributes.fields != 'string') {
+                exported.attributes.fields = JSON.stringify(item.attributes.fields)
+            }
     }
     return exported
 }
