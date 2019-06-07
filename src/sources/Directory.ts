@@ -3,7 +3,7 @@ import {Exportable, Syncable, SyncType} from "../types";
 import * as Bluebird from 'bluebird'
 import {flatten} from 'lodash'
 import * as fse from 'fs-extra'
-import {cloneDeep} from "lodash";
+import {cloneDeep, get, set} from "lodash";
 
 export default class Directory implements Syncable {
     dir: string
@@ -68,7 +68,21 @@ function prettify(item: Exportable) {
     const exported = cloneDeep(item)
     switch(item.type) {
         case 'index-pattern':
-            exported.attributes.fields = JSON.parse(item.attributes.fields)
+            prettifyField(exported, 'attributes.fields')
+            prettifyField(exported, 'attributes.fieldFormatMap')
+            break;
+        case 'visualization':
+            prettifyField(exported, 'attributes.visState')
+            prettifyField(exported, 'attributes.uiStateJSON');
+            prettifyField(exported, 'attributes.kibanaSavedObjectMeta.searchSourceJSON');
+            break;
+        case 'dashboard':
+            prettifyField(exported, 'attributes.panelsJSON')
+            prettifyField(exported, 'attributes.optionsJSON')
+            prettifyField(exported, 'attributes.kibanaSavedObjectMeta.searchSourceJSON');
+            break;
+        case 'search':
+            prettifyField(exported, 'attributes.kibanaSavedObjectMeta.searchSourceJSON');
     }
     return exported
 }
@@ -83,10 +97,49 @@ function uglify(item: Exportable) {
     const exported = cloneDeep(item)
     switch(item.type) {
         case 'index-pattern':
-            // Guard against fields not being an object yet.
-            if(typeof exported.attributes.fields != 'string') {
-                exported.attributes.fields = JSON.stringify(item.attributes.fields)
-            }
+            uglifyField(exported, 'attributes.fields')
+            uglifyField(exported, 'attributes.fieldFormatMap')
+            break;
+        case 'visualization':
+            uglifyField(exported, 'attributes.visState')
+            uglifyField(exported, 'attributes.uiStateJSON');
+            uglifyField(exported, 'attributes.kibanaSavedObjectMeta.searchSourceJSON');
+            break;
+        case 'dashboard':
+            uglifyField(exported, 'attributes.panelsJSON')
+            uglifyField(exported, 'attributes.optionsJSON')
+            uglifyField(exported, 'attributes.kibanaSavedObjectMeta.searchSourceJSON');
+            break;
+        case 'search':
+            uglifyField(exported, 'attributes.kibanaSavedObjectMeta.searchSourceJSON');
     }
     return exported
+}
+
+/**
+ * Convert a single JSON string field into a JSON object.
+ *
+ * @param object
+ * @param fieldName
+ */
+function prettifyField(object, fieldName) {
+    let value = get(object, fieldName)
+    // Guard against double-decoding the value.
+    if(value !== undefined && typeof value === 'string') {
+        set(object, fieldName, JSON.parse(value))
+    }
+}
+
+/**
+ * Convert a single JSON object into a JSON string.
+ *
+ * @param object
+ * @param fieldName
+ */
+function uglifyField(object, fieldName) {
+    let value = get(object, fieldName)
+    // Guard against double-encoding the value.
+    if(value !== undefined && typeof value !== 'string') {
+        set(object, fieldName, JSON.stringify(value))
+    }
 }
