@@ -1,6 +1,6 @@
 # Kibana-Code-Deployer
 
-This package is a command-line tool that can be used to import and export saved Kibana objects to JSON files in a local directory.  These JSON files can be committed to version control.
+Kibana Code Deployer is brought to you by your friends at [Last Call Media](https://www.lastcallmedia.com), this package is a command-line tool that can be used to import and export saved Kibana objects to JSON files in a local directory.  These JSON files can be committed to version control.
 
 Usage
 -----
